@@ -1,0 +1,175 @@
+<html>
+<head>
+<title> Deadlocks in single threaded applications
+</title>
+
+<style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  
+</style>
+<link rel="stylesheet" href="../main.css">
+</head>
+<body>
+
+<header id="title-block-header">
+    <h1 class="title">
+    False Sharing Examples with C
+    </h1>
+</header>
+<nav id="TOC" role="doc-toc">
+    <ul>
+        <li><a href="#E1">  Base Algorithm </a></li>
+        <li><a href="#E2">  False Sharing Algorithm </a></li>
+        <li><a href="#Experiments">  Experimentation Procedures </a></li>
+        <li><a href="#Results">  Results </a></li>
+    </ul>
+</nav>
+<section id="E1" class="level1">
+<h1>
+Base Algorithm
+</h1>
+<p>
+The base algorithm will be a for-loop with a sum / subtraction depending on <b> i mod 2 </b>.
+The variables are aligned to be at the start of a cache line, because my machine has 64 bytes, 
+we use <b> int __attribute__((aligned(64))) val1</b>.
+</p>
+<div class="sourceCode" id="cb3">
+
+</p>
+<div class="sourceCode" id="cb3">
+<pre class="sourceCode c">
+<code class="sourceCode c">
+    int val1;
+    int val2;
+    long int n = 1000000000;
+    
+    void thread1(){
+        val1 = 0;
+        for (int i=0;i&lt;n;i++){
+            if(i%2 == 0){
+                val1 += i;
+            }else{
+                val1 -= i;
+    
+            }
+        }
+    }
+    
+    void thread2(){
+        val2 = 0;
+        for (int i=0;i&lt;n;i++){
+            if(i%2 == 0){
+                val2 += i;
+            }else{
+                val2 -= i;
+    
+            }
+        }
+    }
+    
+</code>
+</pre>
+</div>
+
+<section id="E2" class="level1">
+<h1>
+False Sharing Algorithm
+</h1>
+<p>
+The alternate algorithm simply guarantees false sharing by guaranteeing that both <b>val1</b> and <b>val2</b> are right next to each other in memory.
+We can guarantee that there will be false sharing because the calloc(n, size) library function allocates
+n number of bytes that are of size sequentially. But, to verify that something like <i>example 1 </i>wouldn't happen 
+the variable will be bounded to the start of a cache line.
+
+</p>
+<div class="sourceCode" id="cb3">
+<pre class="sourceCode c">
+<code class="sourceCode c">
+    int* val = NULL;
+    long int n = 1000000000;
+    
+    void thread1(){
+        for (int i=0;i&lt;n;i++){
+            if(i%2 == 0){
+                val[0] += i;
+            }else{
+                val[0] -= i;
+    
+            }
+        }
+    }
+    
+    void thread2(){
+        for (int i=0;i&lt;n;i++){
+            if(i%2 == 0){
+                val[1] += i;
+            }else{
+                val[1] -= i;
+    
+            }
+        }
+    }
+    ...
+    
+    int main(){
+        val = calloc(2, sizeof(int));
+        ...
+    }
+</code>
+</pre>
+</div>
+
+</section>
+<section id="Experiments" class="level1">
+<h1>
+Experimentation Procedures
+</h1>
+<p>
+    We need to then begin describing the experimentation procedures.<br />
+    Each program is run 50 times, and averaged over the 50 runs. <br />
+    We also want to verify that false sharing is guaranteed, and therefore,
+    <b>gcc </b>compiler optimizations are disabled. <br />
+
+</p>
+    
+</section>
+<section id="Results" class="level1">
+<h1>
+Results
+</h1>
+<p>
+    The false sharing program reports 4.858 seconds average runtime and the
+    non-false sharing program reports 2.613 seconds. This is an overall an 85.9% increase in runtime 
+    for the false sharing program.
+
+</p>
+</section>
+<section id="SourceCode" class="level1">
+<h1>
+Source Code
+</h1>
+<p>
+    The source code can be found at: <a href="https://github.com/kakaname/false-shr-exp1">https://github.com/kakaname/false-shr-exp1</a>
+</p>
+</section>
+<section id="Notes" class="level1">
+<h1>
+Notes
+</h1>
+<p>
+    Please send any support about what I could have improved to <a href="mailto:youngwo2@ualberta.ca">youngwo2@ualberta.ca</a>
+</p>
+</section>
+
+<footer>
+<a href="../index.html">HOME
+</a>
+</footer>
+
+</body>
+</html>
